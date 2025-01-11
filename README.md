@@ -99,6 +99,6 @@ For issues or questions, please contact the development team:
      ---
       - name: panorama_contest_update
         scm: 'git'
-        src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_nw_paloalto_contentupgrade_check.git
+        src: https://github.com/mahendra-pratap-sengar/panorama_contest_update.git
         version: main
      ```
