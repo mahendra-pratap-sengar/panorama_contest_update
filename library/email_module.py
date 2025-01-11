@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-@author: mahendra.pratap.sengar@kyndryl.com
+@author: mahendras.tulipit@gmail.com
 @date: 11th Jan. 2025
 @description: This module send the email to the distribution list.
 '''
