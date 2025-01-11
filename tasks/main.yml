@@ -5,7 +5,7 @@
     exec_changed: false
     exec_rc: 1
     exec_message: "The initial status didn't change during the execution of the playbook"
-    exec_automation: "ansible_role_nw_paloalto_contentupgrade_check"
+    exec_automation: "panorama_contest_update"
 
 - name: Panorama content installation playbook
   block:
