@@ -91,7 +91,7 @@ For issues or questions, please contact the development team:
         tasks:
           - name: Initiating Playbook
             ansible.builtin.include_role:
-              name: ansible_role_nw_paloalto_contentupgrade_check
+              name: panorama_contest_update
      ```
    - Create a role folder in your repo which should have requirements.yml file where you have to point towards this repo
 
