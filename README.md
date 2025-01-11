@@ -79,4 +79,16 @@ For issues or questions, please contact the development team:
 
 ### **Ansible Tower Configuration**
 1. **Project Setup**:
-   - Create a new
+   - Create a new project and point this repo.
+   - Create a job template with credentials
+   - Create a repo to call the role as below:
+
+     ```yml
+     ---
+      - name: Panorama content update playbook
+        hosts: localhost # keep localhost only
+        gather_facts: false
+        tasks:
+          - name: Initiating Playbook for event apflap
+            ansible.builtin.include_role:
+              name: ansible_role_nw_paloalto_contentupgrade_check
