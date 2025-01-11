@@ -89,6 +89,16 @@ For issues or questions, please contact the development team:
         hosts: localhost # keep localhost only
         gather_facts: false
         tasks:
-          - name: Initiating Playbook for event apflap
+          - name: Initiating Playbook
             ansible.builtin.include_role:
               name: ansible_role_nw_paloalto_contentupgrade_check
+     ```
+   - Create a role folder in your repo which should have requirements.yml file where you have to point towards this repo
+
+     ```yml
+     ---
+      - name: panorama_contest_update
+        scm: 'git'
+        src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_nw_paloalto_contentupgrade_check.git
+        version: main
+     ```
