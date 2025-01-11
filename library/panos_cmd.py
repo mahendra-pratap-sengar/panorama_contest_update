@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 '''
-@author: mahendra.pratap.sengar@kyndryl.com
+@author: mahendras.tulipit@gmail.com
 @date: 03rd Jan. 2025
 @description: This module runns all the OP&CMD xml based commands on Panorama or paloalto devices.
 '''
