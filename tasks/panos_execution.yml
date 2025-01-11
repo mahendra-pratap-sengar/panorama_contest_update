@@ -1,0 +1,186 @@
+---
+- name: Check the content upgrade status
+  delegate_to: "{{ jump_host }}"
+  block:
+    - name: Check all content entry
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<request><content><upgrade><check></check></upgrade></content></request>"
+        xml_elements: ["content-updates"]
+      register: panos_check
+
+    - name: Show content entry
+      ansible.builtin.debug:
+        var: panos_check.json_output
+
+  rescue:
+    - name: Set fact when content check block failed
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc_10: 10
+        exec_message_10: "Check content check block"
+      when: >-
+        (panos_check.msg is defined and panos_check.msg) or (panos_check.json_output is defined and panos_check.json_output)
+
+- name: Download content upgrade
+  delegate_to: "{{ jump_host }}"
+  block:
+    - name: Download content upgrade
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<request><content><upgrade><download><latest/></download></upgrade></content></request>"
+        xml_elements: ["line", "job"]
+      register: panos_dnld
+
+    - name: Set the status of content download
+      ansible.builtin.set_fact:
+        job_msg: '{{ panos_dnld.json_output.line }}'
+        job_id: '{{ panos_dnld.json_output.job }}'
+
+    - name: Display download status jobid
+      ansible.builtin.debug:
+        msg:
+          - "Download Status: {{ job_msg }}"
+
+    - name: Show job id status
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<show><jobs><id>{{ job_id }}</id></jobs></show>"
+        xml_elements: ["details"]
+      register: panos_job_status
+
+    - name: Show JSON output
+      ansible.builtin.debug:
+        var: panos_job_status.json_output.details
+
+    - name: Set the version of download
+      ansible.builtin.set_fact:
+        latest_ver: '{{ panos_job_status.json_output.details.line.2 | regex_findall("Applications and Threats version:\s+(\S+)") }}'
+
+  rescue:
+    - name: Set fact when content download block failed
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc_11: 11
+        exec_message_11: "Check content download block"
+      when: >-
+        (panos_dnld.msg is defined and panos_dnld.msg) or
+        (panos_dnld.json_output is defined and not panos_dnld.json_output) or
+        (panos_job_status.msg is defined and panos_job_status.msg) or
+        (panos_job_status.json_output is defined and not panos_job_status.json_output) or
+        (latest_ver is not defined) or
+        (not latest_ver)
+
+- name: Check the content upgrade status after download
+  delegate_to: "{{ jump_host }}"
+  when:
+    - (latest_ver is defined and latest_ver | length > 0)
+  block:
+    - name: Check content upgrade status after download
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<request><content><upgrade><check></check></upgrade></content></request>"
+        xml_elements: ["content-updates"]
+      register: check_after_dnld
+
+    - name: Show JSON output
+      ansible.builtin.debug:
+        var: check_after_dnld.json_output
+
+    - name: Check for updates with a specific version
+      panos_content_version:
+        json_data: '{{ check_after_dnld.json_output | to_json }}'
+        target_version: '{{ latest_ver.0 }}'
+      register: result
+
+    - name: Setting the variables
+      ansible.builtin.set_fact:
+        release_on: '{{ result.updates | map(attribute="released-on") | list }}'
+        downloaded: '{{ result.updates | map(attribute="downloaded") | list | default("yes") }}'
+        current: '{{ result.updates | map(attribute="current") | list | default("yes") }}'
+
+    - name: Display updates found
+      ansible.builtin.debug:
+        msg:
+          - "Latest-Version : {{ latest_ver }}"
+          - "Released-on : {{ release_on }}"
+          - "Downloaded Status : {{ downloaded }}"
+          - "Current Status: {{ current }}"
+
+  rescue:
+    - name: Set fact when content check after dnld block failed
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc_12: 12
+        exec_message_12: "Check content check after download block"
+      when: >-
+        (check_after_dnld.msg is defined and check_after_dnld.msg) or
+        (check_after_dnld.json_output is defined and not check_after_dnld.json_output) or
+        (latest_ver is not defined) or
+        (not latest_ver)
+
+- name: Install latest content upgrade
+  delegate_to: "{{ jump_host }}"
+  when:
+    - (current is defined and current | length > 0)
+    - ("no" in current)
+  block:
+    - name: Install latest content upgrade
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<request><content><upgrade><install><version>latest</version></install></upgrade></content></request>"
+        xml_elements: ["line", "job"]
+      register: panos_install
+
+    - name: Set the latest install status of content
+      ansible.builtin.set_fact:
+        job_msg_install: '{{ panos_install.json_output.line }}'
+        job_id_install: '{{ panos_install.json_output.job }}'
+
+    - name: Display install status jobid
+      ansible.builtin.debug:
+        msg:
+          - "Download Status: {{ job_msg_install }}"
+
+    - name: Pause for 120 seconds
+      ansible.builtin.pause:
+        seconds: 120
+
+    - name: Show install job id status
+      panos_cmd:
+        username: "{{ username }}"
+        password: "{{ password }}"
+        fw_ip_address: "{{ server }}"
+        xml_command: "<show><jobs><id>{{ job_id_install }}</id></jobs></show>"
+        xml_elements: ["job"]
+      register: panos_install_status
+
+    - name: Show JSON output for install status
+      ansible.builtin.debug:
+        var: panos_install_status.json_output.job
+
+  rescue:
+    - name: Set fact when content install block failed
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc_13: 13
+        exec_message_13: "Check install content block"
+      when: >-
+        (panos_install.msg is defined and panos_install.msg) or
+        (panos_install.json_output is defined and not panos_install.json_output) or
+        (panos_install_status.msg is defined and panos_install_status.msg) or
+        (panos_install_status.json_output is defined and not panos_install_status.json_output)

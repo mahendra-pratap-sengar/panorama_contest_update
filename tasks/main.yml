@@ -1,0 +1,37 @@
+---
+- name: Initialize variables for playbook
+  ansible.builtin.set_fact:
+    exec_success: false
+    exec_changed: false
+    exec_rc: 1
+    exec_message: "The initial status didn't change during the execution of the playbook"
+    exec_automation: "ansible_role_nw_paloalto_contentupgrade_check"
+
+- name: Panorama content installation playbook
+  block:
+    - name: Content upgrade playbook initiated
+      ansible.builtin.include_tasks: panos_execution.yml
+
+    - name: Set Fact after successfull execution of the playbook
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc: 0
+        exec_message: "{{ lookup('template', 'output.j2') }}"
+      when: >-
+        (exec_rc_10 is not defined) and
+        (exec_rc_11 is not defined) and
+        (exec_rc_12 is not defined) and
+        (exec_rc_13 is not defined)
+
+    - name: Set Fact on failure of the playbook
+      ansible.builtin.set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc: 2
+        exec_message: "{{ lookup('template', 'output.j2') }}"
+      when: >-
+        (exec_rc_10 is defined and exec_rc_10) or
+        (exec_rc_11 is defined and exec_rc_11) or
+        (exec_rc_12 is defined and exec_rc_12) or
+        (exec_rc_13 is defined and exec_rc_13)

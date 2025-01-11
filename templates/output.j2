@@ -1,0 +1,44 @@
+Playbook Execution Report
+{{ "=" * 26 }}
+
+Job ID: {{ tower_job_id }}
+{% if tower_user_email is defined and tower_user_email %}
+Job Executed by: {{ tower_user_email }}
+{% else %}
+Job Executed by: {{ tower_schedule_name }}
+{% endif %}
+
+{{ "-" * 60 }}
+
+Content Download Status
+{{ "-" * 24 }}
+{% if current is defined and "yes" in current %}
+Content is the latest version installed details below:-
+{{ "-" * 60 }}
+
+    - Latest Version: {{ latest_ver.0 }}
+    - Released on: {{ release_on.0 }}
+    - Downloaded Status: {{ downloaded.0 }}
+    - Current Status: {{ current.0 }}
+
+{% elif current is defined and "no" in current %}
+Latest content version has been installed, details below:
+{{ "-" * 60 }}
+
+    Job Details:
+    {{ "-" * 12 }}
+    {{ panos_install_status.json_output.job }}
+
+{{ "-" * 60 }}
+
+{% else %}
+Automation could not perform the update manual intervention required.
+Reason:
+    1. Credentials Priviledge not allowing to execute xml commands.
+    2. Some command was not able to execute.
+    3. Panorama may be unreachable.
+    4. Name was not resolved.
+
+{% endif %}
+
+{{ "-" * 60 }}
